@@ -3,19 +3,112 @@
 #---------------------------------------------------------------------------------------#
 # R code written by         | Andre Blazko                                              #
 # Start date                | 05/08/2014                                                #
+# Last updated in           | 09/10/2016                                                #
 #---------------------------------------------------------------------------------------#
 
 # Colors references
-# q = q + scale_fill_manual(values=c("#999999", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7", "#04B4AE", "#F8766D", "#2E9AFE", "#FACC2E", "#E32DFB"))
+# q = q + scale_fill_manual(values=c(
+# "#999999", cinza
+# "#E69F00", laranja
+# "#D55E00", laranja escuro
+# "#009E73", verde escuro
+# "#F0E442", amarelo escuro
+# "#FACC2E", amarelo claro
+# "#56B4E9", azul claro
+# "#0072B2", azul escuro
+# "#2E9AFE", azul claro fosflorescente
+# "#CC79A7", roxo claro
+# "#04B4AE", verde claro
+# "#F8766D", vermelho claro
+# "#E32DFB", roxo claro fosflorescente
+# ))
 # q = q + scale_fill_brewer(palette="Spectral")
 # RColorBrewer::display.brewer.all()
 
 
+##### Libraries (backup)
+# 
+# library("sqldf")
+# library("dplyr")
+# library("WriteXLS")
+# library("coin")
+# library("ggplot2")
+# library("doBy")
+# library("foreign")
+# library("reshape2")
+# library("tm")
+# library("wordcloud")
+# library("caret")
+# library("readxl")         --> Leitura e gravacao de planilhas excel .xls e .xlsx
+# library("DiagrammeR")     --> Desenha diagramas e fluxogramas interligados
+# 
+# install.packages('shiny', type='source')
+# install.packages('htmlwidgets', type='source')
+# library("shiny")
+# library("shinydashboard")
+# library("shinyjs")
+# library("Rcpp")
+# library("DT")
+# 
+# 
+# 
+# A serem verificados / uteis:
+# install.packages("dygraphs")       --> Desenha grafico de series temporais interativo (panning, zooming, shading, annotations)
 
 
-##### Functions
 
 
+##### Lista de chamada das funcoes dessa biblioteca
+# 
+# 
+# 
+# funcRCopy(table=data)
+# funcRPaste()
+# funcCleanText(text=)
+# 
+# funcWriteCSV(data=, outputFile="", outputPath="")
+# 
+# funcWilcoxTest(
+#      data          = mydata.u2
+#     ,test.group1   = "Controle"
+#     ,test.group2   = "GCTMO"
+#     ,measure.name  = "TMV"
+# )
+# 
+# funcBoxplot(
+#      data          = mydata.u2
+#     ,tot.groups    = 3
+#     ,test.group1   = "Controle"
+#     ,test.group2   = "GCTMO"
+#     ,test.group3   = "GCMO"
+#     ,test.group4   = ""
+#     ,test.group5   = ""
+#     ,measure.name  = "TMNV"
+#     ,measure.label = "TMNV"
+#     ,measure.unit  = "(em u2)"
+# )    
+# 
+# funcHistogramPlot(
+#      data          = mydata.u2
+#     ,density       = "TRUE"
+#     ,vline.ref     = "mean"
+#     ,tot.groups    = 3
+#     ,test.group1   = "Controle"
+#     ,test.group2   = "GCTMO"
+#     ,test.group3   = "GCMO"
+#     ,test.group4   = ""
+#     ,test.group5   = ""
+#     ,measure.name  = "TMV"
+#     ,measure.label = "TMV"
+#     ,measure.unit  = "(em u2)"
+# )
+# 
+# 
+
+##### Inicio do codigo das funcoes
+# 
+# 
+# 
 library("coin")
 funcWilcoxTest =
     function(data, test.group1, test.group2, measure.name)
@@ -306,248 +399,6 @@ function (var.target="", var.prediction="", var.df="", var.group="", var.title="
 }
 
 
-# Goodness of Fit Metrics (for prediction models with target [0;1])
-funcGFMmetrics = 
-function (var.target="", var.prediction="", var.df="")
-{
-    # Mandatory library
-    library(reshape2) # upload 'reshape2' package
-    
-    # Dataframe preparation
-    df = subset(eval(parse(text=var.df)), select=c(var.target, var.prediction))
-    colnames(df)[1]="Target"
-    colnames(df)[2]="Score"
-    
-    # Baisc sanity tests
-    if (nrow(df)>=50)                  {san_test1="ok"} else {san_test1="nok"}
-    if (length(unique(df$Target))==2 ) {san_test2="ok"} else {san_test2="nok"}
-    
-    if (san_test1=="ok" & san_test2=="ok")
-    {
-        # Dataframe preparation
-        df = df[order(-df$Score), ]
-        df$Percentile = round((floor(1:dim(df)[1] * 500 / (dim(df)[1]+1)) + 1) * (100/500), 0)
-        df$Predicted = with(df, as.factor(ifelse(Score>=mean(Score), 1, 0)))
-        
-        # Precision, Recall, F1, Accuracy calculation
-        confusionMatrix = c(table(df$Predicted, df$Target))
-        TN = confusionMatrix[1]
-        FP = confusionMatrix[2]
-        FN = confusionMatrix[3]
-        TP = confusionMatrix[4]
-        
-        # Accuracy and Error Rate calculation
-        var.Accuracy = (TP + TN) / sum(confusionMatrix)
-        var.ErrorRate = 1 - var.Accuracy
-        
-        # Kappa calculation (agreement level between prediction and true labels)
-        pr_e = ((TN + FP) / sum(confusionMatrix)) * ((TN + FN) / sum(confusionMatrix)) +
-               ((FN + TP) / sum(confusionMatrix)) * ((FP + TP) / sum(confusionMatrix))
-        var.Kappa = (var.Accuracy - pr_e) / (1 - pr_e)
-        
-        # Precision, Recall and F1 calculation
-        var.Precision = TP / (TP + FP) # equals 'predicted' hit rate   
-        var.Recall = TP / (TP + FN)    # equals sensitivity = 'true' hit rate
-        var.F1 = (2 * var.Precision * var.Recall) / (var.Precision + var.Recall) # harmonic mean
-        
-        # Logloss calculation (uncertainty of the probabilities of the model by comparing them to the true labels)
-        pred1 = c(df$Score)
-        if (max(pred1)>1) {pred1 = rescale(pred1, to=c(0.001, 0.999))}
-        pred2 = 1 - pred1
-        pred <- cbind(pred1,pred2)
-        
-        act1 <- c(pred1 / pred1)
-        act2 <- c(pred1 - pred1)
-        act <- cbind(act1,act2)
-    
-        eps = 1e-15;
-        nr = nrow(pred)
-        pred = matrix(sapply( pred, function(x) max(eps,x)), nrow = nr)      
-        pred = matrix(sapply( pred, function(x) min(1-eps,x)), nrow = nr)
-        ll = sum(act*log(pred) + (1-act)*log(1-pred))
-        var.LogLoss = ll * -1/(nrow(act))
-        
-        # Basic counts calculation for next metrics
-        df = aggregate(. ~ Target + Percentile, data=df, function(x) length(x))
-        colnames(df)[3]="Count"
-        df = reshape2::dcast(df, Percentile ~ Target, value.var="Count")
-        colnames(df)[2]="N_0"
-        colnames(df)[3]="N_1"
-        df$N_0 = ifelse(is.na(df$N_0), 0, df$N_0)
-        df$N_1 = ifelse(is.na(df$N_1), 0, df$N_1)
-    
-        # KS calculation
-        df$pctCol_1_acm = cumsum(df$N_1) / sum(df$N_1) # true-positive (Sensitivity)
-        df$pctCol_0_acm = cumsum(df$N_0) / sum(df$N_0) # false-positive
-        df$abs_dif = abs(df$pctCol_1_acm - df$pctCol_0_acm)      # temporary
-        var.KS = max(df$abs_dif)
-    
-        # AUC and GINI calculation
-        df$Xtime  = df$pctCol_0_acm # False Positive Rate
-        df$Yvalue = df$pctCol_1_acm # Sensitivity
-    
-        df$LagTime  = c(rep(NA, 1), df$Xtime)[1:length(df$Xtime)]    # ~lag() function in R
-        df$LagValue = c(rep(NA, 1), df$Yvalue)[1:length(df$Yvalue)]  # ~lag() function in R
-    
-        df$LagTime  = ifelse(is.na(df$LagTime), 0, df$LagTime)
-        df$LagValue = ifelse(is.na(df$LagValue), 0, df$LagValue)
-    
-        df$LagTime  = ifelse(df$Xtime==0, 0, df$LagTime)
-        df$LagValue = ifelse(df$Xtime==0, 0, df$LagValue)
-    
-        df$Trapezoid = (df$Xtime-df$LagTime)*(df$Yvalue+df$LagValue)/2
-        df$SumTrapezoid = cumsum(df$Trapezoid)
-    
-        var.AUC  = max(df$SumTrapezoid)
-        var.GINI = 2 * max(df$SumTrapezoid) - 1
-        
-        # Salve the performance metrics in a vector
-        var.FitMetrics = c(var.AUC, var.KS, var.GINI, var.LogLoss, var.Kappa, var.F1, var.Accuracy, var.ErrorRate, var.Precision, var.Recall)
-        var.FitMetrics = round(var.FitMetrics, 5)
-        names(var.FitMetrics) = c("AUC", "KS", "GINI", "LogLoss", "Kappa", "F1", "Accuracy", "ErrorRate", "Precision", "Recall")
-        return(var.FitMetrics)
-    
-        # Interpretation of the measures:
-        #     
-        # AUC        = total area under the ROC Curve
-        # KS         = maximum distance between cumulative distributions frequencies of the target and no-target
-        # GINI       = measure the inequality level among values of the frequency distribution between target and no-target
-        # Logloss    = uncertainty of the probabilities of the model by comparing them to the true labels
-        # Kappa      = agreement level between prediction and true labels
-        # F1         = harmonic mean between Precision and Recall measures
-        # Accuracy   = overall accuracy of the model considering target and no-target predictions
-        # Error Rate = overall error of the model considering target and no-target predictions
-        # Precision  = 'predicted' hit rate
-        # Recall     = 'true' hit rate
-        
-    } else
-    {
-        cat("\nWARNING: data frame must have >= 50 rows AND target variable must be of length 2!\n")
-    }
-}
-
-
-# Goodness of Fit Metrics 'ROC plot' (for prediction models with target [0;1])
-funcGFMplotROC = 
-function (var.target="", var.prediction="", var.df="", var.fsize)
-{
-    library(reshape2) # upload 'reshape2' package
-    library(ggplot2)  # upload 'ggplot2' package
-    
-    # Dataframe preparation
-    df = subset(eval(parse(text=var.df)), select=c(var.target, var.prediction))
-    colnames(df)[1]="Target"
-    colnames(df)[2]="Score"    
-    df = df[order(-df$Score), ]
-    df$Percentile = round((floor(1:dim(df)[1] * 500 / (dim(df)[1]+1)) + 1) * (100/500), 0)
-    
-    # Basic counts calculation
-    df = aggregate(. ~ Target + Percentile, data=df, function(x) length(x))
-    colnames(df)[3]="Count"
-    df = dcast(df, Percentile ~ Target, value.var="Count")
-    colnames(df)[2]="N_0"
-    colnames(df)[3]="N_1"
-    df$N_0 = ifelse(is.na(df$N_0), 0, df$N_0)
-    df$N_1 = ifelse(is.na(df$N_1), 0, df$N_1)
-
-    # ROC axies calculation
-    df$pctCol_1_acm = round(cumsum(df$N_1) / sum(df$N_1), 4) # true-positive (Sensitivity)
-    df$pctCol_0_acm = round(cumsum(df$N_0) / sum(df$N_0), 4) # false-positive
-
-    # AUC calculation
-    df$Xtime  = df$pctCol_0_acm # False Positive Rate
-    df$Yvalue = df$pctCol_1_acm # Sensitivity
-
-    df$LagTime  = c(rep(NA, 1), df$Xtime)[1:length(df$Xtime)]    # ~lag() function in R
-    df$LagValue = c(rep(NA, 1), df$Yvalue)[1:length(df$Yvalue)]  # ~lag() function in R
-
-    df$LagTime  = ifelse(is.na(df$LagTime), 0, df$LagTime)
-    df$LagValue = ifelse(is.na(df$LagValue), 0, df$LagValue)
-
-    df$LagTime  = ifelse(df$Xtime==0, 0, df$LagTime)
-    df$LagValue = ifelse(df$Xtime==0, 0, df$LagValue)
-
-    df$Trapezoid = (df$Xtime-df$LagTime)*(df$Yvalue+df$LagValue)/2;
-    df$SumTrapezoid = cumsum(df$Trapezoid)
-
-    var.AUC  = round(max(df$SumTrapezoid), 4)
-
-   # ROC Curve generation
-    plotROC = ggplot(data=df, aes(x=pctCol_0_acm, y=pctCol_1_acm))
-    plotROC = plotROC + theme_grey()
-    plotROC = plotROC + theme(legend.position="bottom", title=element_text(size=3*var.fsize), text=element_text(colour="gray40", size=4*var.fsize))
-    plotROC = plotROC + theme(axis.text.x=element_text(size=3*var.fsize, angle=0, vjust=0.5, hjust=0.5))
-    plotROC = plotROC + ggtitle(paste("Receiver Operating Characteristic Curve (AUC =", var.AUC, ")"))
-    plotROC = plotROC + geom_ribbon(aes(x=pctCol_0_acm, ymin=pctCol_0_acm, ymax=pctCol_1_acm), colour="black", alpha=0.2, size=0)
-    plotROC = plotROC + geom_line(colour="blue")
-    plotROC = plotROC + geom_line(aes(x=0, y=1), colour="black")
-    plotROC = plotROC + scale_x_continuous(limits = c(0, 1), breaks = seq(0, 1, 0.1))
-    plotROC = plotROC + scale_y_continuous(limits = c(0, 1), breaks = seq(0, 1, 0.1))
-    plotROC = plotROC + xlab("False Positive Rate (1-Specificity)") + ylab("True Positive Rate (Sensitivity)")
-    return(plotROC)
-}
-
-
-# Goodness of Fit Metrics 'KS plot' (for prediction models with target [0;1])
-funcGFMplotKS = 
-function (var.target="", var.prediction="", var.df="", var.fsize)
-{
-    library(reshape2) # upload 'reshape2' package
-    library(ggplot2)  # upload 'ggplot2' package
-    
-    # Dataframe preparation
-    df = subset(eval(parse(text=var.df)), select=c(var.target, var.prediction))
-    colnames(df)[1]="Target"
-    colnames(df)[2]="Score"    
-    df = df[order(-df$Score), ]
-    df$Percentile = round((floor(1:dim(df)[1] * 500 / (dim(df)[1]+1)) + 1) / 500, 4)
-    
-    # Basic counts calculation
-    df = aggregate(. ~ Target + Percentile, data=df, function(x) length(x))
-    colnames(df)[3]="Count"
-    df = dcast(df, Percentile ~ Target, value.var="Count")
-    colnames(df)[2]="N_0"
-    colnames(df)[3]="N_1"
-    df$N_0 = ifelse(is.na(df$N_0), 0, df$N_0)
-    df$N_1 = ifelse(is.na(df$N_1), 0, df$N_1)
-
-    # KS calculation
-    df$pctCol_1_acm = round(cumsum(df$N_1) / sum(df$N_1), 4) # true-positive (Sensitivity)
-    df$pctCol_0_acm = round(cumsum(df$N_0) / sum(df$N_0), 4) # false-positive
-    df$abs_dif = abs(df$pctCol_1_acm - df$pctCol_0_acm)      # temporary
-    var.KS = max(df$abs_dif)
-
-    # KS positions in the graph
-    var.positions    = as.vector(subset(df, Percentile==0.5, select=c(Percentile, pctCol_1_acm, pctCol_0_acm)))
-    var.ypos.target1 = var.positions[[2]]
-    var.ypos.target0 = var.positions[[3]]
-
-    var.positions    = as.vector(tail(subset(df, abs_dif==var.KS, select=c(Percentile, pctCol_1_acm, pctCol_0_acm, abs_dif)), 1))
-    var.xpos.ks      = var.positions[[1]]
-    var.ypos1.ks     = var.positions[[2]]
-    var.ypos2.ks     = var.positions[[3]]
-   
-    # KS graph generation
-    plotKS = ggplot(data=df)
-    plotKS = plotKS + theme_grey()
-    plotKS = plotKS + theme(title=element_text(size=3*var.fsize), text=element_text(colour="gray40", size=4*var.fsize))
-    plotKS = plotKS + theme(axis.text.x=element_text(size=3*var.fsize, angle=0, vjust=0.5, hjust=0.5))
-    plotKS = plotKS + ggtitle(paste("Kolmogorov Smirnov Curve (KS =", var.KS, ")"))
-    plotKS = plotKS + geom_line(aes(x=Percentile, y=pctCol_0_acm), colour="blue")
-    plotKS = plotKS + geom_line(aes(x=Percentile, y=pctCol_1_acm), colour="red")
-    plotKS = plotKS + geom_point(aes(x=var.xpos.ks, y=var.ypos1.ks), colour="black", size=0.5) # KS line
-    plotKS = plotKS + geom_point(aes(x=var.xpos.ks, y=var.ypos2.ks), colour="black", size=0.5) # KS line
-    plotKS = plotKS + geom_segment(aes(x=var.xpos.ks, xend=var.xpos.ks, y=var.ypos1.ks, yend=var.ypos2.ks), colour="black", linetype="dashed", size=0.1) # KS line
-    plotKS = plotKS + scale_x_continuous(limits = c(0, 1), breaks = seq(0, 1, 0.1))
-    plotKS = plotKS + scale_y_continuous(limits = c(0, 1), breaks = seq(0, 1, 0.1))
-    plotKS = plotKS + xlab("Observations Rate") + ylab("Hit Rate")
-    plotKS = plotKS + annotate("text", x=0.5, y=var.ypos.target1, label="Target=1", colour="red", hjust=1, vjust=-1, size=var.fsize)
-    plotKS = plotKS + annotate("text", x=0.5, y=var.ypos.target0, label="Target=0", colour="blue", hjust=-0.2, vjust=1, size=var.fsize)
-    # plotKS = plotKS + annotate("text", x=var.xpos.ks, y=0.55, label=paste("KS=", var.KS, sep=""), hjust=-0.1, size=var.fsize)
-    return(plotKS)
-}
-
-
 # Goodness of Fit Metrics 'Score Density plot' (for prediction models with target [0;1])
 funcGFMplotDensity = 
 function (var.target="", var.prediction="", var.df="", var.fsize)
@@ -623,4 +474,300 @@ compress.number = function(x, round.by=1) {
             )
     return (n)
 }
-	
+
+
+# Round-Robin Tournament tables creation
+funcRoundRobingMatches = function (vTeams, nGamesInDuel, isPlayoffs="no")
+{
+    # Notes
+    # vTeams = vector containing the team's names in the competition
+    # nGamesInDuel = [1, if is one game per duel; 2, if is two games per duel]
+    # isPlayoffs = ["yes", if the games result in elimination of competition; "no", otherwise]
+    # 
+    # IMPORTANT!
+    # If (isPlayoffs=="yes"), it is MANDATORY that the 'vTeams' is submitted to this function considering
+    # the order of the final classification (first -> last) in competition
+    
+    # Sanity checks
+    if (is.vector(vTeams))
+    { # teams' names are defined as a vector
+        
+        nTeams = length(vTeams)
+        nUniqueNames = length(unique(vTeams))
+        if (nTeams==nUniqueNames)
+        { # teams' names are unique
+            
+            if (between(nGamesInDuel, lower=1, upper=2, incbounds=T))
+            { # only ONE or TWO games (home and visitor) allowed
+                
+                if (isPlayoffs=="no")
+                { # it is a classification round
+                    
+                    if (nTeams>2)
+                    { # it has at least three teams in competition
+                        
+                        check_test = "ok"
+                        
+                    } else
+                    { # no sense for a competition!
+                        
+                        cat("ERROR (nTeams): the number of teams must be greater than 2!\n")
+                        check_test = "nok"
+                    }
+                
+                } else
+                { # it is playoff rounds
+                    
+                    if (nTeams %in% c(2,4,8,16))
+                    { # only four possibilities: oitavas (16), quartas (8), semi (4) and final (2)!
+                        
+                        check_test = "ok"
+                        
+                    } else
+                    {
+                        cat("ERROR (nTeams): in playoff games the number of teams must be 2, 4, 8 or 16!\n")
+                        check_test = "nok"
+                    }
+                }
+                
+            } else
+            {
+                cat("ERROR (nGamesInDuel): the number of duels must be 1 or 2!\n")
+                check_test = "nok"
+            }
+            
+        } else
+        { # teams' names ARE NOT unique
+            
+            cat("ERROR (vTeams): duplicated team's names are not allowed!\n")
+            check_test = "nok"
+        }
+        
+    } else
+    { # teams' names ARE NOT defined as a vector
+        
+        cat("ERROR (vTeams): the team names must be a vector object!\n")
+        check_test = "nok"
+    }
+    
+    if ((check_test=="ok"))
+    {
+        # Check if nTeam number is even
+        if ((nTeams%%2)==1)
+        { # make sure nTeams is even
+        
+            nTeams = nTeams + 1
+            GhostTeamIndex <- nTeams
+            
+        } else
+        {
+            GhostTeamIndex = 0
+        }
+        
+        # Prepare the matrix initialization position
+        v = c(seq(1:nTeams))
+        v1 = v[1:(nTeams/2)]
+        v2 = v[(nTeams/2+1):nTeams]
+        v2 = sort(v2, decreasing=T)
+        v = c(v1,v2)
+        m = matrix(v, ncol=(nTeams/2), byrow=T)
+        
+        if (isPlayoffs=="no")
+        {
+            # Execute the loop to set the duels and respective rounds
+            for (R in 1:(nTeams-1))
+            { # rounds
+                
+                for (C in 1:(nTeams/2))
+                { # column index
+                    
+                    if (R==1)
+                    { # first round is set, no need for rotation
+                        
+                        tmp = data.frame(
+                             home = m[1,C]
+                            ,visitor = m[2,C]
+                            ,round = R
+                            ,group = "Grupo 1"
+                        )
+                        if (exists("dftmp_duels")) {dftmp_duels = rbind(dftmp_duels,tmp)} else {dftmp_duels <- tmp}
+                        
+                    } else
+                    { # proceed with the rotation of the cells and save the duel
+                        
+                        m[1,C] = ifelse((m[1,C]-1)==1, nTeams, (m[1,C]-1))
+                        m[2,C] = ifelse((m[2,C]-1)==1, nTeams, (m[2,C]-1))
+                        m[1,1] = 1
+                        tmp = data.frame(
+                             home = m[1,C]
+                            ,visitor = m[2,C]
+                            ,round = R
+                            ,group = "Grupo 1"
+                        )
+                        if (exists("dftmp_duels")) {dftmp_duels = rbind(dftmp_duels,tmp)} else {dftmp_duels <- tmp}
+                    }
+                }
+            }
+            rm(R,C,tmp,m,v,v1,v2)
+            dftmp_duels$phase = "1a. Fase"
+            
+            # Delete the duels regarding the Ghost Team
+            if (GhostTeamIndex>0)
+            {
+                dftmp_duels = dftmp_duels[ (dftmp_duels$home!=GhostTeamIndex) & (dftmp_duels$visitor!=GhostTeamIndex) ,]
+                nTeams = nTeams - 1
+            }
+        
+        } else
+        {
+            # Execute the loop ONLY ONCE to set the duels
+            for (C in 1:(nTeams/2))
+            { # column index, and no need for rotation
+                
+                tmp = data.frame(
+                     home = m[1,C]
+                    ,visitor = m[2,C]
+                    ,round = 1
+                    ,group = paste("Grupo", C)
+                )
+                if (exists("dftmp_duels")) {dftmp_duels = rbind(dftmp_duels,tmp)} else {dftmp_duels <- tmp}
+                
+            }
+            rm(C,m,v,v1,v2)
+            dftmp_duels$phase = ifelse(nTeams==16, "Oitavas-final"
+                                       ,ifelse(nTeams==8, "Quartas-final"
+                                               ,ifelse(nTeams==4, "Semi-final", "Final")))
+        }
+        
+        # Create second matches among the teams if applied
+        if (nGamesInDuel==2)
+        {
+            # Invert the order of the games so the last game is played in the house of the best classified team
+            tmp <- dftmp_duels
+            dftmp_duels = tmp[,c("visitor","home","round","group")]
+            colnames(dftmp_duels)[1] = "home"
+            colnames(dftmp_duels)[2] = "visitor"
+            dftmp_duels$phase = ifelse(isPlayoffs=="no","1a. Fase"
+                               ,ifelse(nTeams==16, "Oitavas-final"
+                                       ,ifelse(nTeams==8, "Quartas-final"
+                                               ,ifelse(nTeams==4, "Semi-final", "Final"))))
+            tmp$round = tmp$round + max(tmp$round)
+            tmp$phase = ifelse(isPlayoffs=="no","2a. Fase"
+                               ,ifelse(nTeams==16, "Oitavas-final"
+                                       ,ifelse(nTeams==8, "Quartas-final"
+                                               ,ifelse(nTeams==4, "Semi-final", "Final"))))
+            dftmp_duels = rbind(dftmp_duels,tmp)
+            rm(tmp)
+        }
+        
+        if (isPlayoffs=="no")
+        {
+            # Sort by random the vector containing the team names
+            v_random = sample(seq(1:nTeams), size=nTeams, replace=F)
+            names(v_random) = vTeams
+            v_random = sort(v_random)
+                
+        } else
+        {
+            # Keep original order in the inputed teams' name vector
+            v_random = seq(1:nTeams)
+            names(v_random) = vTeams
+            
+        }
+        
+        # Recover the team names
+        colnames(dftmp_duels)[1] = "homeIndex"
+        colnames(dftmp_duels)[2] = "visitorIndex"
+        dftmp_duels$team_home = with(dftmp_duels, names(v_random[homeIndex]) )
+        dftmp_duels$team_visitor = with(dftmp_duels, names(v_random[visitorIndex]) )
+        dftmp_duels$round = with(dftmp_duels, ifelse(round<10, paste0("Rodada 0",round), paste("Rodada",round)) )
+        dftmp_duels$game = 1:nrow(dftmp_duels)
+        dftmp_duels = dftmp_duels[,c("game","phase","group","round","team_home","team_visitor")]
+        return(dftmp_duels)
+    }
+}
+
+
+# Gauge plot using ggplot2
+funcGaugePlot = function(value, breaks=c(0,30,70,100), breaksLabel="", var_fsize=1, var_title="Gauge Plot", breaks_color=c("red","gold","forestgreen"))
+{
+    
+    # Sanity check
+    sanity_check = "NOK"
+    
+    if (is.numeric(value))
+    {
+        if ( is.numeric(breaks)  &  is.vector(breaks)  &  min(breaks)>=0  &  max(breaks)<=100 )
+        {
+            if ( between(value, min(breaks), max(breaks)) )
+            {
+                if (length(breaks)==length(breaks_color))
+                {
+                    sanity_check = "OK"
+                    
+                } else
+                {
+                    stop("The length of 'breaks' must be equal to the length of 'breaks_color'!")
+                }
+                
+            } else
+            {
+                stop("'value' argument must be inside the range of 'breaks'!")
+            }
+            
+        } else
+        {
+            stop("'breaks' argument must be a numeric vector between 0 and 100!")
+        }
+        
+    } else
+    {
+        stop("'value' argument must be numeric!")
+    }
+    
+    if (sanity_check=="OK")
+    {
+        # Function to get polar measures
+        get_polar = function(a, b, r1=0.5, r2=1.0)
+        {
+            th.start = pi*(1-a/100)
+            th.end   = pi*(1-b/100)
+            th       = seq(th.start, th.end, length=100)
+            x        = c(r1*cos(th), rev(r2*cos(th)))
+            y        = c(r1*sin(th), rev(r2*sin(th)))
+            return(data.frame(x,y))
+        }
+        
+        # Plot design
+        q = ggplot()
+        for (k in 1:(length(breaks)-1) )
+        {
+            q = q + geom_polygon(data=get_polar(breaks[k], breaks[k+1]), aes(x,y), fill=breaks_color[k], alpha=0.7)
+        }
+        q = q + geom_polygon(data=get_polar(value-1, value+1,0.2), aes(x,y), fill="black")
+        q = q + geom_text(data=as.data.frame(breaks)
+                ,size=var_fsize*4, fontface="bold", vjust=0
+                ,aes( x=1.1*cos(pi*(1-breaks/100)), y=1.1*sin(pi*(1-breaks/100)), label=paste0(breaks,breaksLabel) )
+        )
+        q = q + annotate("text", x=0, y=0, label=paste0(value,"%"), vjust=0, size=var_fsize*6, fontface="bold")
+        q = q + ggtitle(paste0(var_title,"\n"))
+        q = q + coord_fixed()
+        q = q + theme_bw()
+        q = q + theme(
+             axis.text=element_blank()
+            ,axis.title=element_blank()
+            ,axis.ticks=element_blank()
+            ,panel.grid=element_blank()
+            ,panel.border=element_blank()
+            ,plot.title = element_text(hjust=0.5)
+            ,title=element_text(size=13*var_fsize)
+        )
+        return(q)
+    }
+}
+
+# Gauge Plots
+funcGaugePlot(value=10, breaks=c(0,25,50,75,100), breaksLabel="%", var_title="Gauge Plot 1", breaks_color=c("red","gold","blue","forestgreen"))
+
+
+
