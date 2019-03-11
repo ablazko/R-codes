@@ -109,6 +109,14 @@
 # 
 # 
 # 
+
+# function to calculate the mode
+modeFunc <- function(x) {
+  v <- unique(x)
+  v[which.max(tabulate(match(x, v)))]
+}
+
+
 library("coin")
 funcWilcoxTest =
     function(data, test.group1, test.group2, measure.name)
@@ -217,7 +225,7 @@ funcRPaste =
     }
 
 
-funcCleanText <- function(text, tolower.option)
+funcCleanText <- function(text, var_tolower="no")
 {
     text = trimws(text, "both")
     text = gsub("[ \t]{2,}", " ", text)
@@ -230,7 +238,7 @@ funcCleanText <- function(text, tolower.option)
     text = gsub("http\\w+", " ", text)
     text = gsub("amp", " ", text)
     
-    if (tolower.option=="yes") {text = tolower(text)}
+    if (var_tolower=="yes") {text = tolower(text)}
     
     text = gsub("á", "a", text)
     text = gsub("é", "e", text)
@@ -248,20 +256,23 @@ funcCleanText <- function(text, tolower.option)
     text = gsub("ñ", "n", text)
     text = gsub("à", "a", text)
 
-    text = gsub("Á", "A", text)
-    text = gsub("É", "E", text)
-    text = gsub("Í", "I", text)
-    text = gsub("Ó", "O", text)
-    text = gsub("Ú", "U", text)
-    text = gsub("Ã", "A", text)
-    text = gsub("Õ", "O", text)
-    text = gsub("Â", "A", text)
-    text = gsub("Ê", "E", text)
-    text = gsub("Ô", "O", text)
-    text = gsub("Ü", "U", text)
-    text = gsub("Ç", "C", text)
-    text = gsub("Ñ", "N", text)
-    text = gsub("À", "A", text)    
+    if (var_tolower=="no")
+    {
+        text = gsub("Á", "A", text)
+        text = gsub("É", "E", text)
+        text = gsub("Í", "I", text)
+        text = gsub("Ó", "O", text)
+        text = gsub("Ú", "U", text)
+        text = gsub("Ã", "A", text)
+        text = gsub("Õ", "O", text)
+        text = gsub("Â", "A", text)
+        text = gsub("Ê", "E", text)
+        text = gsub("Ô", "O", text)
+        text = gsub("Ü", "U", text)
+        text = gsub("Ç", "C", text)
+        text = gsub("Ñ", "N", text)
+        text = gsub("À", "A", text)    
+    }
 }
  
 
@@ -701,7 +712,7 @@ funcGaugePlot = function(value, breaks=c(0,30,70,100), breaksLabel="", var_fsize
         {
             if ( between(value, min(breaks), max(breaks)) )
             {
-                if (length(breaks)==length(breaks_color))
+                if ( (length(breaks)-1)==length(breaks_color) )
                 {
                     sanity_check = "OK"
                     
@@ -767,7 +778,7 @@ funcGaugePlot = function(value, breaks=c(0,30,70,100), breaksLabel="", var_fsize
 }
 
 # Gauge Plots
-funcGaugePlot(value=10, breaks=c(0,25,50,75,100), breaksLabel="%", var_title="Gauge Plot 1", breaks_color=c("red","gold","blue","forestgreen"))
+funcGaugePlot(value=10, breaks=c(0,25,50,100), breaksLabel="%", var_title="Gauge Plot 1", breaks_color=c("red","gold","forestgreen"))
 
 
 
